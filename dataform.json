@@ -1,0 +1,8 @@
+{
+  "defaultSchema": "dataform",
+  "assertionSchema": "dataform_assertions",
+  "warehouse": "bigquery",
+  "defaultDatabase": "qwiklabs-gcp-04-4cbd2f597624",
+  "defaultLocation": "US"
+}
+    
