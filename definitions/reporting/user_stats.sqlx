@@ -1,0 +1,59 @@
+config {
+    type: "view",
+    schema: "reporting",
+    tags: ["daily", "reporting"],
+    description: "Create a summary table for all users including statistics on questions, answers and badges received.",
+    columns: {
+        user_id: `A unique identifier for a user`,
+        age: `The age of a user`,
+        creation_date: `The date this user signed up`,
+        user_tenure: `The number of years since the user's creation date`,
+        badge_count: `The all-time number of badges the user has received`,
+        questions_and_answer_count: `The all-time number of questions and answers the user has created`,
+        question_count: `The all-time number of questions the user has created`,
+        answer_count: `The all-time number of answers the user has created`,
+        last_badge_received_at: `The time the user received their most recent badge`,
+        last_posted_at: `The time the user last posted a question or answer`,
+        last_question_posted_at: `The time the user last posted an answer`,
+        last_answer_posted_at: `The time the user last posted a question`,
+    }
+}
+
+SELECT
+  stg_users.user_id,
+  stg_users.age,
+  ${common.ageBucket("stg_users.age")} AS age_bucket,
+  stg_users.creation_date,
+  stg_users.user_tenure,
+  COUNT(DISTINCT stg_badges.badge_id) AS badge_count,
+  COUNT(DISTINCT posts_all.post_id) AS questions_and_answer_count,
+  COUNT(DISTINCT
+  IF
+    (type="question", posts_all.post_id, NULL)) AS question_count,
+  COUNT(DISTINCT
+  IF
+    (type="answer", posts_all.post_id, NULL)) AS answer_count,
+  MAX(stg_badges.award_timestamp) AS last_badge_received_at,
+  MAX(posts_all.created_at) AS last_posted_at,
+  MAX(
+  IF
+    (type="question", posts_all.created_at, NULL)) AS last_question_posted_at,
+  MAX(
+  IF
+    (type="answer", posts_all.created_at, NULL)) AS last_answer_posted_at
+FROM
+  ${ref("stg_users")} AS stg_users
+LEFT JOIN
+  ${ref("stg_badges")} AS stg_badges
+ON
+  stg_users.user_id = stg_badges.user_id
+LEFT JOIN
+  ${ref("posts_combined")} AS posts_all
+ON
+  stg_users.user_id = posts_all.owner_user_id
+GROUP BY
+  1,
+  2,
+  3,
+  4,
+  5
